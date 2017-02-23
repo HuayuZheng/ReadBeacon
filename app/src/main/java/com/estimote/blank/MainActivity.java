@@ -50,9 +50,26 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        findViewById(R.id.read).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                connected();
+            }
+        });
+
+        connectionProvider = new DeviceConnectionProvider(this);
+        connectionProvider.connectToService(
+                new DeviceConnectionProvider.ConnectionProviderCallback() {
+                    @Override
+                    public void onConnectedToService() {
+                        System.out.println("connect");
+                        MainActivity.this.connectedToTheConnectionProvider = true;
+                    }
+                });
     }
 
     private void estimo() {
+
         ConfigurableDevicesScanner deviceScanner = new ConfigurableDevicesScanner(this.getApplicationContext());
 
 // Only report your own devices. You need to set App ID and Token for this, so
@@ -68,63 +85,45 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onDevicesFound(List<ConfigurableDevicesScanner
                     .ScanResultItem> devices) {
-                String deviceIdentifier = "fbc7ed741c620f8c4c6e2d4bc234023a";
+                String deviceIdentifier = "[fbc7ed741c620f8c4c6e2d4bc234023a]";
                 for (ConfigurableDevicesScanner.ScanResultItem item : devices) {
                     System.out.println(item.device.deviceId.toString());
                     if (item.device.deviceId.toString().equals(deviceIdentifier)) {
                         deviceToConnectTo = item.device;
-                        connectionProvider = new DeviceConnectionProvider(MainActivity.this.getApplicationContext());
-                        connectionProvider.connectToService(
-                                new DeviceConnectionProvider.ConnectionProviderCallback() {
-                                    @Override
-                                    public void onConnectedToService() {
-                                        System.out.println("connect");
-                                        connectedToTheConnectionProvider = true;
-                                        final DeviceConnection connection = connectionProvider.getConnection(
-                                                deviceToConnectTo);
-                                        connection.connect(new DeviceConnectionCallback() {
-                                            @Override
-                                            public void onConnected() {
-                                                Log.d("DeviceConnection", "Connected");
-
-                                                connection.settings.deviceInfo.firmware().get(new SettingCallback<Version>() {
-                                                    @Override
-                                                    public void onSuccess(final Version value) {
-                                                        // Handle read data here.
-                                                        // For example: display them in UI. This callback will be called in the same thread as connection was created (not opened).
-                                                        // You can use your activity method runOnUIThread(Runnable runnable) to handle that.
-                                                        Log.d("DeviceRead", "Read firmware version:  " + value.toString());
-                                                    }
-
-                                                    @Override
-                                                    public void onFailure(DeviceConnectionException exception) {
-                                                        // Handle exceptions here.
-                                                        Log.d("DeviceRead", "Reading firmware version failed.");
-                                                    }
-                                                });
-                                            }
-
-                                            @Override
-                                            public void onDisconnected() {
-                                                Log.d("DeviceConnection", "Disconnected");
-                                            }
-
-                                            @Override
-                                            public void onConnectionFailed(DeviceConnectionException exception) {
-                                                Log.d("DeviceConnection",
-                                                        "Connection failed with error: " + exception.toString());
-                                            }
-                                        });
-                                    }
-                                });
+                        System.out.print(connectedToTheConnectionProvider + deviceToConnectTo.toString());
                     }
                 }
             }
         });
 
 
-    }
 
+    }
+    private void connected() {
+        if (this.connectedToTheConnectionProvider && deviceToConnectTo != null) {
+            System.out.print(connectedToTheConnectionProvider + deviceToConnectTo.toString());
+            DeviceConnection connection = connectionProvider.getConnection(
+                    this.deviceToConnectTo);
+            connection.connect(new DeviceConnectionCallback() {
+                @Override
+                public void onConnected() {
+                    System.out.print("connect 111");
+                    Log.d("DeviceConnection", "Connected");
+                }
+
+                @Override
+                public void onDisconnected() {
+                    Log.d("DeviceConnection", "Disconnected");
+                }
+
+                @Override
+                public void onConnectionFailed(DeviceConnectionException exception) {
+                    Log.d("DeviceConnection",
+                            "Connection failed with error: " + exception.toString());
+                }
+            });
+        }
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
